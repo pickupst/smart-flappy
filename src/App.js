@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
+import { NeuralNetwork } from './neural/nn';
 
 const HEIGHT = 500;
 const WIDTH = 800;
@@ -24,6 +25,7 @@ class Bird {
     this.gravity = 0;
     this.velocity = 0.3;
 
+    this.brain = new NeuralNetwork();
   }
 
   draw() { 
