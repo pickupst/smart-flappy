@@ -13,6 +13,7 @@ const birdX = 150;
 const birdY = 150;
 
 
+
 class Bird {
 
   constructor(contx) {
@@ -25,7 +26,7 @@ class Bird {
     this.gravity = 0;
     this.velocity = 0.3;
 
-    this.brain = new NeuralNetwork(3, 5, 1);
+    this.brain = new NeuralNetwork(2, 5, 1);
   }
 
   draw() { 
@@ -46,7 +47,28 @@ class Bird {
 
     this.y += this.gravity; 
 
-    //console.log(this.velocity);
+    if (this.y < 0) {
+      this.y = 0;
+    }else if (this.y > HEIGHT){
+      this.y = HEIGHT;
+    }
+
+    this.think();
+  }
+
+  think = () => {
+    const inputs = 
+    [
+      this.x / WIDTH,
+      this.y / HEIGHT,
+
+    ];
+
+    const output = this.brain.predict(inputs);
+  
+    if (output[0] < 0.5) {
+      this.jump();
+    }
   }
 
   jump = () => {
@@ -108,11 +130,11 @@ class App extends Component {
     this.loop = setInterval(this.gameLoop, 1000 / FPS);
   }
 
-  onKeyDown = (e) => {
-    if (e.code === 'Space') {
-      this.birds[0].jump();
-    }
-  }
+  // onKeyDown = (e) => {
+  //   if (e.code === 'Space') {
+  //     this.birds[0].jump();
+  //   }
+  // }
 
   getCtx = () => this.canvasRef.current.getContext("2d");
 
@@ -149,8 +171,8 @@ class App extends Component {
     this.birds.forEach(bird => bird.update());
   
     if(this.isGameOver()){
-      alert("game over");
-      clearInterval(this.loop);
+      //alert("game over");
+      //clearInterval(this.loop);
 
     };
 
