@@ -3,10 +3,13 @@ import './App.css';
 
 const HEIGHT = 500;
 const WIDTH = 800;
-const PIPE_WIDTH = 80; 
+const PIPE_WIDTH = 60; 
 const MIN_PIPE_HEIGHT = 40;
 const speed = 1.5;
 const FPS = 120;
+
+const birdX = 150;
+const birdY = 150;
 
 
 class Bird {
@@ -14,11 +17,13 @@ class Bird {
   constructor(contx) {
 
     this.ctx = contx;
-    this.x = 100;
-    this.y = 150;
-    this.gravity = 1;
-    this.velocity = 0;
+
+    this.x = birdX;
+    this.y = birdY;
     
+    this.gravity = 0;
+    this.velocity = 0.3;
+
   }
 
   draw() { 
@@ -30,11 +35,20 @@ class Bird {
   }
 
   update = () => {
-    this.y +=  this.gravity;
+
+    this.gravity += this.velocity;
+    
+    if (this.gravity > 4) {
+      this.gravity = 4;
+    }
+
+    this.y += this.gravity; 
+
+    //console.log(this.velocity);
   }
 
   jump = () => {
-    this.velocity = 10;
+    this.gravity = -4;
   }
 
 }
@@ -76,7 +90,7 @@ class App extends Component {
     super(props);
     this.canvasRef = React.createRef();
     this.frameCount = 0;
-    this.space = 80;
+    this.space = 120;
     this.pipes = [];
     this.birds = [];
   }
@@ -89,10 +103,10 @@ class App extends Component {
     this.pipes = this.generatePipes();
     this.birds = [new Bird(ctx)];
 
-    setInterval(this.gameLoop, 1000 / FPS);
+    this.loop = setInterval(this.gameLoop, 1000 / FPS);
   }
 
-  onKeYdOWN = (e) => {
+  onKeyDown = (e) => {
     if (e.code === 'Space') {
       this.birds[0].jump();
     }
@@ -125,11 +139,40 @@ class App extends Component {
       this.pipes.push(...pipes);
     }
 
+    //update pipe position
     this.pipes.forEach(pipe => pipe.update());
-
     this.pipes = this.pipes.filter(pipe => !pipe.isDead);
   
+    //update bird position
     this.birds.forEach(bird => bird.update());
+  
+    if(this.isGameOver()){
+      alert("game over");
+      clearInterval(this.loop);
+
+    };
+
+  }
+
+  isGameOver = () => {
+
+
+    let gameOver = false;
+    //detect colliison 
+    this.birds.forEach(bird => {
+      this.pipes.forEach(pipe => {
+        
+        if (bird.y < 0 ||bird.y > HEIGHT ||
+            (bird.x > pipe.x && bird.x < pipe.x + pipe.width
+              && bird.y > pipe.y && bird.y < pipe.y + pipe.height)) {
+        
+                gameOver = true;
+        
+              }
+            });
+          });
+
+    return gameOver;
   }
 
   draw() {
@@ -158,7 +201,9 @@ class App extends Component {
        fdfdfd  
       
       </canvas>
-
+      <div onClick = {() => this.setState({})}>
+        {this.frameCount}
+      </div>
       </div>
     );
   }
