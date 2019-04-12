@@ -25,7 +25,7 @@ class Bird {
     this.gravity = 0;
     this.velocity = 0.3;
 
-    this.brain = new NeuralNetwork();
+    this.brain = new NeuralNetwork(3, 5, 1);
   }
 
   draw() { 
