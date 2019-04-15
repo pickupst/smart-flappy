@@ -12,11 +12,11 @@ const FPS = 120;
 const birdX = 150;
 const birdY = 150;
 
-
+const TOTAL_BIRDS = 100;
 
 class Bird {
 
-  constructor(contx) {
+  constructor(contx, brain) {
 
     this.ctx = contx;
 
@@ -26,7 +26,12 @@ class Bird {
     this.gravity = 0;
     this.velocity = 0.3;
 
-    this.brain = new NeuralNetwork(2, 5, 1);
+    this.isDead = false;
+
+    this.brain = brain ? brain.copy() : new NeuralNetwork(2, 5, 1);
+
+    this.age = 0;
+    this.fitness = 0;
   }
 
   draw() { 
@@ -39,6 +44,7 @@ class Bird {
 
   update = () => {
 
+    this.age += 1;
     this.gravity += this.velocity;
     
     if (this.gravity > 4) {
@@ -69,6 +75,24 @@ class Bird {
     if (output[0] < 0.5) {
       this.jump();
     }
+  }
+
+  mutate = () => {
+
+    this.brain.mutate((x) => {
+
+      function mutate(x) {
+        if (Math.random() < 0.1) {
+          let offset = Math.random() * 0.5;
+          return x + offset;
+        } else {
+          return x;
+        }
+      }
+
+
+    });
+
   }
 
   jump = () => {
@@ -117,15 +141,18 @@ class App extends Component {
     this.space = 120;
     this.pipes = [];
     this.birds = [];
+    this.deadBirds = [];
   }
 
   componentDidMount() {
-    document.addEventListener('keydown', this.onKeyDown);
+    //document.addEventListener('keydown', this.onKeyDown);
+    this.startGame();
+    
+  }
 
-    var ctx = this.getCtx();
-
+  startGame = (birdBrain) => {
     this.pipes = this.generatePipes();
-    this.birds = [new Bird(ctx)];
+    this.birds = this.generateBirds(birdBrain);
 
     this.loop = setInterval(this.gameLoop, 1000 / FPS);
   }
@@ -149,6 +176,19 @@ class App extends Component {
     return [firstPipe, secondPipe];
   }
 
+  generateBirds = (brain) => {
+    const birds = [];
+    var ctx = this.getCtx();
+
+    for (let i = 0; i < TOTAL_BIRDS; i += 1) {
+
+     birds.push(new Bird(ctx, brain));
+      
+    }
+
+    return birds;
+  }
+
   gameLoop = () => {
     this.update();
     this.draw();
@@ -165,38 +205,50 @@ class App extends Component {
 
     //update pipe position
     this.pipes.forEach(pipe => pipe.update());
+    //delete pipes
     this.pipes = this.pipes.filter(pipe => !pipe.isDead);
   
     //update bird position
     this.birds.forEach(bird => bird.update());
-  
-    if(this.isGameOver()){
-      //alert("game over");
-      //clearInterval(this.loop);
+    //Delete bad birds
+    this.updateBirdDeadState();
 
-    };
+    this.deadBirds.push(...this.birds.filter(bird => bird.isDead));
+    this.birds = this.birds.filter(bird => !bird.isDead);
+    
+    if (this.birds.length === 0) {
+      let totalAge = 0;
+
+      this.deadBirds.forEach((deadBird) => {totalAge += deadBird.age; });
+
+      this.deadBirds.forEach((deadBird) => { deadBird.fitness = deadBird.age / totalAge; });
+      this.deadBirds.sort((a, b) => a.fitness <= b.fitness);
+
+      const strongest = this.deadBirds[0];
+      strongest.mutate(0.1);
+
+      this.birds = this.generateBirds(strongest.brain);
+
+    }
 
   }
 
-  isGameOver = () => {
+  updateBirdDeadState = () => {
 
-
-    let gameOver = false;
     //detect colliison 
     this.birds.forEach(bird => {
       this.pipes.forEach(pipe => {
         
         if (bird.y < 0 ||bird.y > HEIGHT ||
-            (bird.x > pipe.x && bird.x < pipe.x + pipe.width
-              && bird.y > pipe.y && bird.y < pipe.y + pipe.height)) {
+            (bird.x >= pipe.x && bird.x <= pipe.x + pipe.width
+              && bird.y >= pipe.y && bird.y <= pipe.y + pipe.height)) {
         
-                gameOver = true;
+                bird.isDead = true;
         
               }
             });
           });
 
-    return gameOver;
   }
 
   draw() {
@@ -205,6 +257,11 @@ class App extends Component {
 
     this.pipes.forEach(pipe => pipe.draw());
     this.birds.forEach(bird => bird.draw());
+  }
+
+  reset () {
+    const ctx = this.canvasRef.current.getContext("2d");
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
   }
 
   shiftLeft() {
