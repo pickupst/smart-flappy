@@ -1,6 +1,6 @@
 // Other techniques for learning
 
-import {Matrix} from '../neural/matrix';
+import {Matrix} from './matrix';
 
 class ActivationFunction {
     constructor(func, dfunc) {
